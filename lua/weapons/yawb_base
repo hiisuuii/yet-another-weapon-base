@@ -1,0 +1,162 @@
+
+SWEP.Author					= "hisui"
+SWEP.Contact				= "github.com/hiisuuii/yet_another_weapon_base/"
+SWEP.PrintName				= "Yet Another Weapon Base Base"
+SWEP.Purpose				= ""
+SWEP.Instructions			= ""
+SWEP.HoldType				= "ar2"
+
+SWEP.Slot					= 3
+SWEP.ViewModelFOV			= 70
+SWEP.ViewModelFlip			= false
+SWEP.ViewModel				= "models/weapons/v_smg_p90.mdl"
+SWEP.WorldModel				= "models/weapons/w_smg_p90.mdl"
+
+SWEP.Spawnable				= false
+SWEP.AdminSpawnable			= false
+
+/*
+* These values will most likely be modified in-game by the Fire Modes.
+* You can modify them as default values, but know they will be potentially
+* be overridden by the default fire mode.
+*/
+SWEP.Primary.Sound			= "weapons/p90/p90-1.wav"
+SWEP.Primary.Recoil			= 0.1
+SWEP.Primary.Damage			= 1
+SWEP.Primary.NumShots		= 1
+SWEP.Primary.Cone			= 0.017
+SWEP.Primary.Delay 			= 0.05
+
+SWEP.Primary.ClipSize		= 50
+SWEP.Primary.DefaultClip	= 50
+SWEP.Primary.Automatic		= true
+SWEP.Primary.Ammo			= "AR2"
+
+SWEP.Secondary.ClipSize		= -1
+SWEP.Secondary.DefaultClip	= -1
+SWEP.Secondary.Automatic	= false
+SWEP.Secondary.Ammo			= "none"
+
+
+/*
+* YAWB Unique Vars
+*/
+SWEP.Primary.RPM = 300
+SWEP.Secondary.RPM = -1
+
+SWEP.ScopeInTime = 0.1 -- Time it takes to fully scope in (Both scopes)
+SWEP.ScopeOutTime = 0.1 -- Time it takes to fully un-scope (Both scopes)
+
+SWEP.UseScope2D = false -- Use 2D Scope
+SWEP.Scope2DFactor = 2 -- 2x Zoom
+SWEP.Scope2DTexture = "yawb/acog" -- 2D Scope Texture
+SWEP.Scope2DScale = 1 -- Scale factor for the texture
+SWEP.Scope2DPos = Vector(0,0) -- Position of the Scope texture relative to the top left corner
+SWEP.Scope2DRot = 0 -- Rotation of the Scope texture relative to up
+
+SWEP.UseScope3D = false -- Use 3D (Rendertarget) Scope
+SWEP.Scope3DFactor = 2 -- 2x Zoom
+SWEP.Scope3DModel = "models/yawb/rt_circle.mdl" -- Model to project the Rendertarget texture on
+SWEP.Scope3DPos = Vector(0,0,0) -- Position of the Scope model relative to the weapon's origin
+SWEP.Scope3DRot = Angle(0,0,0) -- Angle of the Scope model relative to the weapon's forward
+
+/*
+* Fire Mode Data Structure
+["Firemode Name"] = {
+    ["SwitchTo"] = function()
+        -- This code runs every time the weapon changes from a different fire mode to this fire mode.
+        -- For example, you can adjust the firerate or amount of ammo used per shot.
+    end,
+    ["SwitchFrom"] = function()
+        -- This code runs every time the weapon changes to a different fire mode from this fire mode.
+        -- For example, you can force a weapon to reload itself when exiting this fire mode.
+    end,
+    ["PrimaryAttack"] = function()
+        -- This will be called instead of the PrimaryAttack function of your weapon.
+        -- You can use this to make your weapon be able to fire as both a rocket launcher
+        -- and a rifle, for example.
+    end,
+    ["SecondaryAttack"] = function()
+        -- This will be called instead of the SecondaryAttack function of your weapon.
+    end,
+    ["Reload"] = function()
+        -- This will be called instead of the Reload function of your weapon.
+        -- You can use this to do things like disabling reloading entirely, or make reloading
+        -- only reload one round at a time (like a lever-action rifle!)
+    end,
+    ["default"] = false -- If true, this fire mode will be the initial fire mode when the weapon is spawned.
+    [""]
+}
+
+* Default Fire Modes
+* Full Auto and Semi Auto are provided to all weapons by default.
+* To disable one or both, just redeclare their tables as nil.
+*/
+SWEP.FireModes = {
+    ["Full Auto"] = {
+        ["default"] = true
+    },
+    ["Semi Auto"] = {
+        ["init"] = function()
+            self.RPM = 60
+        end,
+        [""]
+    }
+}
+SWEP.ActiveFireMode = {
+    ["name"] = nil
+    ["tbl"] = {}
+}
+
+function SWEP:Initialize()
+    for k, v in pairs(self.FireModes) do
+        if v.default then
+            self.ActiveFireMode.name = k
+            self.ActiveFireMode.tbl = v
+        end
+    end
+	self:SetWeaponHoldType(self.HoldType)
+end
+
+function SWEP:Precache() 
+	util.PrecacheSound("weapons/clipempty_pistol.wav") 
+end
+
+function SWEP:Reload()
+    if(E is held) then
+end
+
+function SWEP:ChangeFireMode()
+    
+end
+
+function SWEP:PrimaryAttack()
+	if (!self:CanPrimaryAttack()) then return end
+	
+
+
+	self.Owner:SetAnimation(PLAYER_ATTACK1)
+	self.Owner:MuzzleFlash()
+	self:SendWeaponAnim(ACT_VM_IDLE)
+	
+
+	--if (CLIENT) then return end
+	
+	self:EmitSound(self.Primary.Sound)
+	
+	self:TakePrimaryAmmo(1)
+	
+    if(self.ActiveFireMode.tbl.PrimaryAttack) then
+        self.Owner:LagCompensation(true)
+            self.ActiveFireMode.tbl.PrimaryAttack()
+        self.Owner:LagCompensation(false)
+	else
+        return
+    end
+	self:SetNextPrimaryFire(CurTime() + self.Primary.Delay + 0.05)
+end
+
+function SWEP:Deploy()
+	self.Weapon:SendWeaponAnim(ACT_VM_DRAW)
+	return true
+end
